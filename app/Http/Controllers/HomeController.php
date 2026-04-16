@@ -37,19 +37,18 @@ class HomeController extends Controller
         $availableAssets = (clone $availableAssetsQuery)
             ->orderByDesc('quantity_available')
             ->orderBy('name')
-            ->limit(12)
             ->get();
 
         $availableUnits = (int) (clone $availableAssetsQuery)->sum('quantity_available');
 
         $activeLoansQuery = Loan::query()
             ->with('asset:id,name,code,photo')
-            ->whereIn('status', ['borrowed', 'partial']);
+            ->whereIn('status', ['borrowed', 'partial'])
+            ->whereRaw('quantity > COALESCE(quantity_returned, 0)');
 
         $activeLoans = (clone $activeLoansQuery)
             ->orderByDesc('loan_date')
             ->orderByDesc('id')
-            ->limit(30)
             ->get();
 
         $inUseUnits = (int) (clone $activeLoansQuery)

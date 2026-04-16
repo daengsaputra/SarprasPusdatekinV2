@@ -11,16 +11,21 @@
     $loanGroups = collect($activeLoans)->groupBy(function ($loan) {
         return $loan->batch_code ?: ('loan-'.$loan->id);
     })->map(function ($group) {
-        $first = $group->first();
-        $loanDate = $group->min('loan_date');
-        $plannedReturn = $group->filter(fn($loan) => $loan->return_date_planned)->min('return_date_planned');
+      $activeItems = $group->filter(function ($loan) {
+        return (int) ($loan->quantity_remaining ?? 0) > 0;
+      });
+      $first = $activeItems->first() ?? $group->first();
+      $loanDate = $activeItems->min('loan_date') ?? $group->min('loan_date');
+      $plannedReturn = ($activeItems->isNotEmpty() ? $activeItems : $group)
+        ->filter(fn($loan) => $loan->return_date_planned)
+        ->min('return_date_planned');
         $lateDays = $plannedReturn && now()->isAfter($plannedReturn)
             ? now()->diffInDays($plannedReturn)
             : 0;
-        $assetsLabels = $group->map(function ($loan) {
+      $assetsLabels = ($activeItems->isNotEmpty() ? $activeItems : $group)->map(function ($loan) {
             $name = $loan->asset->name ?? 'Sarana tidak ditemukan';
             $code = $loan->asset->code ?? null;
-            $quantity = (int) ($loan->quantity ?? 0);
+        $quantity = (int) ($loan->quantity_remaining ?? 0);
             $label = trim($name . ($code ? " ({$code})" : ''));
             if ($quantity > 1) {
                 $label .= ' x' . $quantity;
@@ -41,7 +46,8 @@
             'borrower_name' => $first->borrower_name,
             'unit' => $first->unit,
             'activity' => $activity,
-            'total_quantity' => (int) $group->sum('quantity'),
+          'total_quantity' => (int) ($activeItems->isNotEmpty() ? $activeItems : $group)
+            ->sum(fn ($loan) => (int) ($loan->quantity_remaining ?? 0)),
             'loan_date' => $loanDate,
             'return_date_planned' => $plannedReturn,
             'late_days' => $lateDays,
@@ -49,7 +55,7 @@
             'assets_full' => $assetsLabels->implode(', '),
             'batch_code' => $first->batch_code,
         ];
-    })->values();
+      })->filter(fn ($loan) => (int) ($loan->total_quantity ?? 0) > 0)->values();
 @endphp
 
 @push('styles')
@@ -189,17 +195,17 @@
     letter-spacing: 0;
   }
   .scroll-list {
-    max-height: 380px;
-    overflow-y: auto;
+      max-height: 380px;
+      overflow-y: auto;
     padding-right: 0.35rem;
   }
-  .scroll-list::-webkit-scrollbar {
-    width: 6px;
-  }
-  .scroll-list::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--brand-blue) 45%, transparent);
-    border-radius: 8px;
-  }
+    .scroll-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scroll-list::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--brand-blue) 45%, transparent);
+      border-radius: 8px;
+    }
   .asset-item {
     display: flex;
     justify-content: space-between;
@@ -791,7 +797,9 @@
                   <div class="asset-meta text-truncate">{{ $asset->category ?? 'Kategori belum diatur' }}</div>
                 </div>
               </div>
-              <span class="asset-quantity">{{ $asset->quantity_available }} unit</span>
+              @if((int) ($asset->quantity_available ?? 0) !== 1)
+                <span class="asset-quantity">{{ $asset->quantity_available }} unit</span>
+              @endif
             </div>
           @empty
             <p class="text-muted mb-0">Belum ada sarpras siap pinjam untuk ditampilkan.</p>
@@ -830,7 +838,9 @@
                   @endif
                 </div>
                 <div class="loan-head-stats">
-                  <span class="loan-quantity">{{ (int) ($loan->total_quantity ?? 0) }} unit</span>
+                  @if((int) ($loan->total_quantity ?? 0) !== 1)
+                    <span class="loan-quantity">{{ (int) ($loan->total_quantity ?? 0) }} unit</span>
+                  @endif
                   <span class="loan-status-chip {{ $overdue ? 'is-overdue' : '' }}">{{ $overdue ? 'Perlu perhatian' : 'Sedang Dipinjam' }}</span>
                 </div>
               </div>
