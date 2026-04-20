@@ -1,0 +1,13 @@
+stages:
+  - test
+
+test-runner:
+  stage: test
+  tags:
+    - sarpras-prod
+  script:
+    - echo "Runner OK"
+    - whoami
+    - pwd
+    - php -v || true
+    - git --version
