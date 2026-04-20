@@ -1,13 +1,18 @@
 stages:
-  - test
+  - deploy
 
-test-runner:
-  stage: test
+deploy-production:
+  stage: deploy
   tags:
     - sarpras-prod
+  only:
+    - main
   script:
-    - echo "Runner OK"
-    - whoami
-    - pwd
-    - php -v || true
-    - git --version
+    - echo "Deploying production..."
+    - sudo -u vsarpras bash -c '
+        cd /var/www/web_sarpras/sarprasv2/sarprasv2 &&
+        git pull origin main &&
+        composer install --no-interaction --prefer-dist --optimize-autoloader &&
+        php artisan migrate --force &&
+        php artisan optimize:clear
+      '
