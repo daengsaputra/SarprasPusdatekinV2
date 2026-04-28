@@ -6,9 +6,10 @@ use App\Models\Loan;
 use App\Models\SiteSetting;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\URL;
+
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
@@ -18,8 +19,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-URL::forceScheme('https');
- Paginator::useBootstrapFive();
+        if (! app()->environment('local')) {
+            URL::forceScheme('https');
+        }
+
+        Paginator::useBootstrapFive();
 
         if (Schema::hasTable('loans')) {
             View::composer('layouts.horizontal', function ($view) {
