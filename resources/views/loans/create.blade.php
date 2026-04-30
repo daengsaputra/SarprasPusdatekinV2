@@ -180,6 +180,37 @@
     color: #b91c1c;
     margin-bottom: .12rem;
   }
+  .employee-picker { position: relative; }
+  .employee-picker__results {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 1200;
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 18px 42px rgba(15,23,42,0.14);
+    padding: .35rem;
+  }
+  .employee-picker__results.is-visible { display: block; }
+  .employee-picker__item {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    border-radius: 10px;
+    padding: .55rem .65rem;
+    text-align: left;
+    color: #0f172a;
+  }
+  .employee-picker__item:hover,
+  .employee-picker__item:focus { background: #eef2ff; outline: 0; }
+  .employee-picker__name { display: block; font-weight: 700; font-size: .88rem; }
+  .employee-picker__meta { display: block; color: #64748b; font-size: .75rem; margin-top: .08rem; line-height: 1.35; }
+  .employee-picker__state { padding: .55rem .65rem; color: #64748b; font-size: .82rem; }
   @media (max-width: 576px) {
     .loan-toast { top: 14px; right: 14px; left: 14px; max-width: none; }
   }
@@ -260,19 +291,22 @@
 
           <div class="mb-2">
             <label class="form-label">Nama Peminjam</label>
-            <input type="text" name="borrower_name" class="form-control @error('borrower_name') is-invalid @enderror" required>
+            <div class="employee-picker" data-employee-picker data-search-url="{{ route('loans.pegawai.search') }}">
+              <input type="text" name="borrower_name" value="{{ old('borrower_name', $borrower['name'] ?? '') }}" class="form-control @error('borrower_name') is-invalid @enderror" required autocomplete="off" placeholder="ketik nama atau NIP pegawai...">
+              <div class="employee-picker__results" data-employee-results></div>
+            </div>
             @error('borrower_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
           <div class="mb-2">
             <label class="form-label">Kontak Peminjam</label>
-            <input type="text" name="borrower_contact" class="form-control" required>
+            <input type="text" name="borrower_contact" value="{{ old('borrower_contact', $borrower['contact'] ?? '') }}" class="form-control" required>
           </div>
           <div class="mb-2">
             <label class="form-label">Unit Kerja BPIP</label>
             <select name="unit" class="form-select @error('unit') is-invalid @enderror" required>
               <option value="">-- pilih unit kerja --</option>
               @foreach(($units ?? config('bpip.units')) as $unit)
-                <option value="{{ $unit }}">{{ $unit }}</option>
+                <option value="{{ $unit }}" @selected(old('unit', $borrower['unit'] ?? '') === $unit)>{{ $unit }}</option>
               @endforeach
             </select>
             @error('unit')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -515,6 +549,117 @@
     saveDraft();
   });
 
+  function initEmployeePicker() {
+    const picker = document.querySelector('[data-employee-picker]');
+    if (!picker || !batchForm) return;
+
+    const input = picker.querySelector('[name="borrower_name"]');
+    const resultsEl = picker.querySelector('[data-employee-results]');
+    const searchUrl = picker.getAttribute('data-search-url');
+    const contactInput = batchForm.querySelector('[name="borrower_contact"]');
+    const unitSelect = batchForm.querySelector('[name="unit"]');
+    let timer = null;
+    let abortController = null;
+
+    const setState = (message, visible = true) => {
+      if (!resultsEl) return;
+      resultsEl.innerHTML = '';
+      if (message) {
+        const state = document.createElement('div');
+        state.className = 'employee-picker__state';
+        state.textContent = message;
+        resultsEl.appendChild(state);
+      }
+      resultsEl.classList.toggle('is-visible', visible);
+    };
+
+    const selectEmployee = (employee) => {
+      if (input) input.value = employee.name || '';
+      if (contactInput) contactInput.value = employee.contact || employee.nip || '';
+      if (unitSelect && employee.unit) {
+        let option = Array.from(unitSelect.options).find((item) => item.value === employee.unit);
+        if (!option) {
+          option = new Option(employee.unit, employee.unit, true, true);
+          unitSelect.add(option);
+        }
+        unitSelect.value = employee.unit;
+      }
+      resultsEl?.classList.remove('is-visible');
+      saveDraft();
+    };
+
+    const renderResults = (items) => {
+      if (!resultsEl) return;
+      resultsEl.innerHTML = '';
+      if (!items.length) {
+        setState('Pegawai tidak ditemukan.');
+        return;
+      }
+
+      items.forEach((employee) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'employee-picker__item';
+
+        const name = document.createElement('span');
+        name.className = 'employee-picker__name';
+        name.textContent = employee.name || employee.nip || '-';
+
+        const meta = document.createElement('span');
+        meta.className = 'employee-picker__meta';
+        meta.textContent = [employee.nip, employee.jabatan, employee.unit].filter(Boolean).join(' | ');
+
+        button.appendChild(name);
+        button.appendChild(meta);
+        button.addEventListener('click', () => selectEmployee(employee));
+        resultsEl.appendChild(button);
+      });
+      resultsEl.classList.add('is-visible');
+    };
+
+    const searchEmployee = async () => {
+      const query = input?.value?.trim() || '';
+      if (query.length < 2 || !searchUrl) {
+        resultsEl?.classList.remove('is-visible');
+        return;
+      }
+
+      abortController?.abort();
+      abortController = new AbortController();
+      setState('Mencari pegawai BPIP...');
+
+      try {
+        const response = await fetch(`${searchUrl}?q=${encodeURIComponent(query)}`, {
+          headers: { 'Accept': 'application/json' },
+          signal: abortController.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setState(data.message || 'Gagal mencari pegawai.');
+          return;
+        }
+        renderResults(Array.isArray(data.results) ? data.results : []);
+      } catch (error) {
+        if (error.name !== 'AbortError') setState('Gagal menghubungi API pegawai.');
+      }
+    };
+
+    input?.addEventListener('input', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(searchEmployee, 350);
+    });
+
+    input?.addEventListener('focus', () => {
+      if ((input.value || '').trim().length >= 2 && resultsEl?.children.length) {
+        resultsEl.classList.add('is-visible');
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!picker.contains(event.target)) resultsEl?.classList.remove('is-visible');
+    });
+  }
+
   function openConfirmModal({ title, message, onYes }) {
     confirmAction = typeof onYes === 'function' ? onYes : null;
     if (loanConfirmTitle) loanConfirmTitle.textContent = title || 'Konfirmasi';
@@ -719,6 +864,7 @@
   }
   renderCart();
 
+  initEmployeePicker();
   initFileDropzones();
   initDateFieldFocusFix();
 

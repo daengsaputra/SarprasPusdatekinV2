@@ -2,21 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Auth\SsoController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
     /**
-     * Logout pengguna dan arahkan ke halaman utama
+     * Logout pengguna; deferred ke SsoController agar kalau SSO_DOMAIN
+     * dikonfigurasi, sekaligus logout dari SSO BPIP.
      */
     public function logout(Request $request)
     {
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect('/');
+        return app(SsoController::class)->logout($request);
     }
 }

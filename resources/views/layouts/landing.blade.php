@@ -441,104 +441,23 @@
                 <img src="{{ asset('evanto/assets/images/Logo Baju Pusdatin.png') }}" alt="SARPRAS" class="img-fluid" style="max-height:60px;" onerror="this.style.display='none'">
                 <h5 class="modal-title" id="loginModalFallbackLabel">Masuk Dashboard</h5>
             </div>
-            <form method="POST" action="{{ route('login') }}" class="sarpras-login-form">
-                <div class="modal-body">
-                    @csrf
-
-                    @if (session('status'))
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
-                            {{ session('status') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <strong>Login Gagal!</strong>
-                            <ul class="mb-0 mt-2">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    <div class="mb-3">
-                        <label for="fallbackLogin" class="form-label"><strong>Email / Username</strong></label>
-                        <input id="fallbackLogin" type="text" name="login" class="form-control dz-username" placeholder="Masukkan username atau email anda" required autocomplete="username" autofocus>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fallbackPassword" class="form-label"><strong>Password</strong></label>
-                        <div class="position-relative">
-                            <input id="fallbackPassword" type="password" name="password" class="form-control dz-password" placeholder="Masukkan password anda" required autocomplete="current-password">
-                            <span class="show-pass position-absolute top-50 end-0 me-2 translate-middle-y" style="cursor: pointer;">
-                                <span class="show"><i class="fa fa-eye-slash"></i></span>
-                                <span class="hide"><i class="fa fa-eye"></i></span>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="remember" id="fallbackRemember">
-                        <label class="form-check-label" for="fallbackRemember">Ingat preferensi saya</label>
-                    </div>
-                </div>
-                <div class="px-4 pb-4 text-center">
-                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-2">Masuk Sekarang</button>
-                    @if (Route::has('password.request'))
-                        <button type="button" class="btn btn-link small" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#forgotPasswordModalFallback">Lupa password?</button>
-                    @endif
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade modal-login" id="forgotPasswordModalFallback" tabindex="-1" aria-labelledby="forgotPasswordModalFallbackLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
-        <div class="modal-content">
-            <div class="modal-header border-0 position-relative text-center py-0" style="flex-direction: column;">
-                <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close" style="margin: 1.5rem;"></button>
-                <img src="{{ asset('evanto/assets/images/Logo Baju Pusdatin.png') }}" alt="SARPRAS" class="img-fluid" style="max-height:60px;" onerror="this.style.display='none'">
-                <h5 class="modal-title" id="forgotPasswordModalFallbackLabel">Lupa Password</h5>
-            </div>
             <div class="modal-body">
-                <p class="text-muted mb-4">Masukkan email untuk menerima tautan reset password.</p>
-
                 @if (session('status'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
                         {{ session('status') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 @endif
-
-                @if ($errors->any())
+                @if (session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>Terjadi Kesalahan!</strong>
-                        <ul class="mb-0 mt-2">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
+                        {{ session('error') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 @endif
-
-                <form method="POST" action="{{ route('password.email') }}">
-                    @csrf
-                    <div class="form-group mb-4">
-                        <label class="form-label"><strong>Email</strong></label>
-                        <input id="fallbackEmail" type="email" class="form-control @error('email') is-invalid @enderror"
-                               name="email" value="{{ old('email') }}" required autofocus placeholder="Masukkan email anda">
-                        @error('email')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-2">Kirim Tautan Reset</button>
-                    <div class="text-center">
-                        <button type="button" class="btn btn-link small" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#loginModalFallback">Kembali ke login</button>
-                    </div>
-                </form>
+                <p class="text-muted mb-4">Silakan masuk menggunakan akun SSO BPIP Anda.</p>
+                <a href="{{ route('sso.redirect') }}" class="btn btn-primary w-100 btn-lg mb-2">
+                    <i class="fa fa-shield me-2"></i>Masuk dengan SSO BPIP
+                </a>
             </div>
         </div>
     </div>
