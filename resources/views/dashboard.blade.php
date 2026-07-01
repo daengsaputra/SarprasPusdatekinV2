@@ -730,7 +730,8 @@
     $periodStart = now()->copy()->startOfMonth();
     $periodEnd = now()->copy()->endOfDay();
 
-    $dayKeys = collect(range(0, $periodStart->diffInDays($periodEnd)))
+    $dayOffsets = range(0, max(0, (int) floor($periodStart->diffInDays($periodEnd))));
+    $dayKeys = collect($dayOffsets)
         ->map(fn ($offset) => $periodStart->copy()->addDays($offset)->format('Y-m-d'));
 
     $dayLabels = $dayKeys

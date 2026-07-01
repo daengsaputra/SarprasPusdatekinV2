@@ -89,6 +89,25 @@
     flex-direction:column;
     gap:0.2rem;
   }
+  .audit-date-field .input-group,
+  .audit-date-field .form-control {
+    min-width: 0;
+    width: 100%;
+  }
+  .audit-date-field .input-group {
+    flex-wrap: nowrap;
+  }
+  .audit-date-field .input-group-text {
+    flex: 0 0 auto;
+    background: #f8fafc;
+    color: #64748b;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+  }
+  .audit-date-field .form-control {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
   .role-access-wrap {
     border:1px solid rgba(148,163,184,0.24);
     border-radius:12px;
@@ -453,14 +472,24 @@
         <div class="card-body">
           <h5 class="mb-2">Audit Log Pengaturan</h5>
           <form method="GET" action="{{ route('settings.admin-menu') }}" class="row g-2 mb-3 align-items-end">
-            <div class="col-sm-4 col-md-3">
-              <label class="form-label mb-1">Filter Tanggal</label>
-              <input type="date" name="log_date" value="{{ $selectedLogDate }}" class="form-control form-control-sm">
+            <div class="col-sm-6 col-md-3 audit-date-field">
+              <label class="form-label text-uppercase small fw-semibold mb-1">Dari</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                <input type="date" id="audit_filter_from" name="from" value="{{ $selectedLogFrom }}" class="form-control" lang="id">
+              </div>
             </div>
-            <div class="col-sm-8 col-md-9 d-flex gap-2 flex-wrap">
+            <div class="col-sm-6 col-md-3 audit-date-field">
+              <label class="form-label text-uppercase small fw-semibold mb-1">Sampai</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="fa fa-calendar-alt"></i></span>
+                <input type="date" id="audit_filter_to" name="to" value="{{ $selectedLogTo }}" class="form-control" lang="id">
+              </div>
+            </div>
+            <div class="col-md-6 d-flex gap-2 flex-wrap">
               <button type="submit" class="btn btn-sm btn-outline-primary">Terapkan</button>
               <a href="{{ route('settings.admin-menu') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
-              <a href="{{ route('settings.admin-menu.logs.export', array_filter(['log_date' => $selectedLogDate])) }}" class="btn btn-sm btn-outline-success">Export CSV</a>
+              <a href="{{ route('settings.admin-menu.logs.export', array_filter(['from' => $selectedLogFrom, 'to' => $selectedLogTo])) }}" class="btn btn-sm btn-outline-success">Export CSV</a>
             </div>
           </form>
           <form method="POST" action="{{ route('settings.admin-menu.logs.clear') }}" class="mb-3" data-confirm-form data-confirm-title="Hapus Audit Log?" data-confirm-message="Seluruh riwayat audit akan dihapus permanen. Lanjutkan?">
