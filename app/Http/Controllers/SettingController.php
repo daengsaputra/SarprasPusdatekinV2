@@ -49,23 +49,39 @@ class SettingController extends Controller
     }
 
     /**
-     * @return array{0: array<int, array<string, mixed>>, 1: ?string}
+     * @return array{0: array<int, array<string, mixed>>, 1: ?string, 2: ?string}
      */
     private function filteredAdminLogs(Request $request): array
     {
-        $selectedDate = $request->query('log_date');
+        $from = $request->query('from');
+        $to = $request->query('to');
         $auditLogs = SiteSetting::adminAuditLogs();
 
-        if (is_string($selectedDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate) === 1) {
-            $auditLogs = array_values(array_filter($auditLogs, static function ($log) use ($selectedDate) {
+        $from = is_string($from) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) === 1 ? $from : null;
+        $to = is_string($to) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to) === 1 ? $to : null;
+
+        if ($from || $to) {
+            $auditLogs = array_values(array_filter($auditLogs, static function ($log) use ($from, $to) {
                 $at = is_array($log) ? ($log['at'] ?? null) : null;
-                return is_string($at) && str_starts_with($at, $selectedDate);
+                if (!is_string($at)) {
+                    return false;
+                }
+
+                $logDate = substr($at, 0, 10);
+
+                if ($from && $logDate < $from) {
+                    return false;
+                }
+
+                if ($to && $logDate > $to) {
+                    return false;
+                }
+
+                return true;
             }));
-        } else {
-            $selectedDate = null;
         }
 
-        return [$auditLogs, $selectedDate];
+        return [$auditLogs, $from, $to];
     }
 
     /**
@@ -73,7 +89,7 @@ class SettingController extends Controller
      */
     public function adminMenu(): View
     {
-        [$auditLogs, $selectedDate] = $this->filteredAdminLogs(request());
+        [$auditLogs, $selectedLogFrom, $selectedLogTo] = $this->filteredAdminLogs(request());
 
         $menuItems = [
             'assets_loanable' => ['label' => 'Data Barang', 'desc' => 'Menu publik daftar barang yang bisa dipinjam.'],
@@ -109,7 +125,8 @@ class SettingController extends Controller
             'broadcastMessage' => SiteSetting::adminBroadcast(),
             'presetKeys' => array_keys(SiteSetting::togglePresets()),
             'auditLogs' => $auditPaginator,
-            'selectedLogDate' => $selectedDate,
+            'selectedLogFrom' => $selectedLogFrom,
+            'selectedLogTo' => $selectedLogTo,
             'menuItems' => $menuItems,
             'videoUrl' => $videoMeta['url'],
             'videoMime' => $videoMeta['mime'],
