@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: sarpras_nginx_prod
+    ports:
+      - "9180:80"
+    volumes:
+      - .:/var/www/html
+      - sarpras-vendor:/var/www/html/vendor
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./storage/logs/nginx:/var/log/nginx
+    depends_on:
+      - php-fpm
+    networks:
+      - sarpras-network
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+
+  php-fpm:
+    build:
+      context: .
+      dockerfile: Dockerfile.phpfpm
+    container_name: sarpras_phpfpm_prod
+    volumes:
+      - .:/var/www/html
+      - sarpras-vendor:/var/www/html/vendor
+      - ./php/php.ini:/usr/local/etc/php/php.ini
+      - ./php/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
+    environment:
+      - PHP_FPM_PM=static
+      - PHP_FPM_PM_MAX_CHILDREN=60
+      - ENVIRONMENT=production
+    networks:
+      - sarpras-network
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.phpfpm
+    container_name: sarpras_scheduler_prod
+    volumes:
+      - .:/var/www/html
+      - sarpras-vendor:/var/www/html/vendor
+      - ./php/php.ini:/usr/local/etc/php/php.ini
+    environment:
+      - ENVIRONMENT=production
+    command: php artisan schedule:work
+    depends_on:
+      - db
+    networks:
+      - sarpras-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: mysql:8.0.30
+    container_name: sarpras_mysql_prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "9470:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - sarpras-network
+    restart: unless-stopped
+    command: --max_connections=200
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: sarpras_phpmyadmin_prod
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 300M
+      PMA_ARBITRARY: 0
+    ports:
+      - "9181:80"
+    depends_on:
+      - db
+    networks:
+      - sarpras-network
+    restart: unless-stopped
+
+networks:
+  sarpras-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  sarpras-vendor:

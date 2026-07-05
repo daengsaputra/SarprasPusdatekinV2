@@ -1,0 +1,16 @@
+stages:
+  - deploy
+
+deploy-production:
+  stage: deploy
+  tags:
+    - sarpras-prod
+  only:
+    - main
+  script:
+    - echo "Deploying production..."
+    - sudo -u vsarpras bash -c '
+        cd /var/www/web_sarpras/sarprasv2/sarprasv2 &&
+        git pull origin main &&
+        php artisan optimize:clear
+      '

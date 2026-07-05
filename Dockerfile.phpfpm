@@ -1,0 +1,71 @@
+FROM php:8.3-fpm-alpine
+
+RUN apk add --no-cache \
+    bash \
+    curl \
+    curl-dev \
+    freetype-dev \
+    g++ \
+    gcc \
+    git \
+    icu-dev \
+    icu-libs \
+    libc-dev \
+    libfaketime \
+    libintl \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libxml2-dev \
+    libzip-dev \
+    make \
+    mysql-client \
+    oniguruma-dev \
+    openssh-client \
+    procps \
+    rsync \
+    vim \
+    nano \
+    zlib-dev
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        bcmath \
+        exif \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        zip
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+RUN git config --global --add safe.directory /var/www/html
+
+WORKDIR /var/www/html
+COPY . .
+COPY scripts/docker-php-entrypoint.sh /usr/local/bin/docker-php-entrypoint.sh
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction || true
+
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache \
+    && mkdir -p /var/log/php-fpm \
+    && chown www-data:www-data /var/log/php-fpm \
+    && chmod +x /usr/local/bin/docker-php-entrypoint.sh
+
+RUN echo '#!/bin/sh' > /usr/local/bin/php-fpm-wrapper \
+    && echo 'if [ -n "$FAKETIME" ]; then' >> /usr/local/bin/php-fpm-wrapper \
+    && echo '  export LD_PRELOAD=/usr/lib/faketime/libfaketimeMT.so.1' >> /usr/local/bin/php-fpm-wrapper \
+    && echo '  echo "FAKETIME enabled: $FAKETIME"' >> /usr/local/bin/php-fpm-wrapper \
+    && echo 'fi' >> /usr/local/bin/php-fpm-wrapper \
+    && echo 'exec php-fpm "$@"' >> /usr/local/bin/php-fpm-wrapper \
+    && chmod +x /usr/local/bin/php-fpm-wrapper
+
+EXPOSE 9000
+
+ENTRYPOINT ["/usr/local/bin/docker-php-entrypoint.sh"]
+
+CMD []

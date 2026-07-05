@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  php_apache:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9180:80"
+    volumes:
+      - .:/var/www/html
+      - sarpras-vendor:/var/www/html/vendor
+      - ./apache-config:/etc/apache2/sites-available
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html/public
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0.30
+    environment:
+      MYSQL_ROOT_PASSWORD: rootnihbener@!444r00tsarpras
+      MYSQL_DATABASE: sarpras-bpip
+      MYSQL_USER: sarprasuser
+      MYSQL_PASSWORD: rootnihbener@!444
+    ports:
+      - 9470:3306
+    volumes:
+      - db-data:/var/lib/mysql
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 300M
+      PMA_ARBITRARY: 0
+    ports:
+      - 9181:80
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  sarpras-vendor:
