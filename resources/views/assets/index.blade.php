@@ -162,7 +162,7 @@
     padding: 0.35rem 0.65rem;
     line-height: 1.2;
   }
-  .asset-photo-btn {
+  .asset-preview-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -173,7 +173,19 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .asset-photo-btn__icon {
+  .asset-preview-btn--bast {
+    border-color: rgba(14,165,233,0.38);
+    color: #0369a1;
+    background: rgba(14,165,233,0.08);
+  }
+  .asset-preview-btn:disabled {
+    border-color: rgba(148,163,184,0.35);
+    color: #94a3b8;
+    background: rgba(148,163,184,0.08);
+    cursor: not-allowed;
+    opacity: 0.78;
+  }
+  .asset-preview-btn__icon {
     width: 1.15rem;
     height: 1.15rem;
     border-radius: 999px;
@@ -218,41 +230,107 @@
     top: 50%;
     background: #fff;
     border-radius: 24px;
-    padding: 1rem;
+    padding: 0;
     box-shadow: 0 40px 90px rgba(15,23,42,0.35);
     transform: translate(-50%, -50%) scale(0.92);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    max-width: min(980px, 92vw);
+    max-width: min(1100px, 94vw);
     width: 100%;
     max-height: 90vh;
-    overflow: auto;
+    height: min(850px, 90vh);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .asset-photo-modal.is-visible .asset-photo-panel {
     transform: translate(-50%, -50%) scale(1);
   }
   .asset-photo-label {
-    text-align: center;
+    text-align: left;
     font-size: 16px;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 0.5rem;
+    padding: 1rem 3.5rem 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
   }
-  .asset-photo-panel img {
-    width: 100%;
-    border-radius: 18px;
+  .asset-preview-viewport {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background: #e2e8f0;
+    overscroll-behavior: contain;
+  }
+  .asset-preview-stage {
+    position: relative;
+    min-width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .asset-preview-stage img,
+  .asset-preview-stage iframe {
+    display: block;
+    border: 0;
+    border-radius: 12px;
     object-fit: contain;
-    max-height: min(72vh, 680px);
-    background: #f8fafc;
+    background: #fff;
+    box-shadow: 0 16px 40px rgba(15,23,42,0.2);
+  }
+  .asset-preview-stage [hidden] {
+    display: none !important;
+  }
+  .asset-preview-stage img {
+    max-width: none;
+    max-height: none;
+  }
+  .asset-preview-status {
+    position: absolute;
+    inset: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: #475569;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    pointer-events: none;
+  }
+  .asset-preview-status.is-error {
+    color: #b91c1c;
+  }
+  .asset-preview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+  }
+  .asset-preview-toolbar .btn {
+    min-width: 42px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+  .asset-preview-zoom-value {
+    min-width: 58px;
+    text-align: center;
+    color: #475569;
+    font-size: 0.88rem;
+    font-weight: 700;
   }
   .asset-photo-close {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 0.65rem;
+    right: 0.75rem;
     border: none;
     border-radius: 999px;
     width: 34px;
     height: 34px;
-    background: rgba(15,23,42,0.1);
+    background: #e2e8f0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -432,17 +510,26 @@
                       <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
                     </form>
                     @if($asset->bast_document_path)
-                      <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="{{ asset('storage/'.$asset->bast_document_path) }}">BAST</a>
+                      <button type="button" class="btn btn-sm asset-preview-btn asset-preview-btn--bast" data-preview-view="{{ asset('storage/'.$asset->bast_document_path) }}" data-preview-type="pdf" data-preview-label="BAST - {{ $asset->name }}">
+                        <span class="asset-preview-btn__icon">&#128196;</span>
+                        <span>BAST</span>
+                      </button>
                     @else
-                      <span class="text-muted small">BAST -</span>
+                      <button type="button" class="btn btn-sm asset-preview-btn asset-preview-btn--bast" disabled title="BAST belum tersedia">
+                        <span class="asset-preview-btn__icon">&#128196;</span>
+                        <span>BAST</span>
+                      </button>
                     @endif
                     @if($asset->photo_url)
-                      <button type="button" class="btn btn-sm asset-photo-btn" data-photo-view="{{ $asset->photo_url }}" data-photo-label="{{ $asset->name }}">
-                        <span class="asset-photo-btn__icon">&#128247;</span>
+                      <button type="button" class="btn btn-sm asset-preview-btn" data-preview-view="{{ $asset->photo_url }}" data-preview-type="image" data-preview-label="Foto - {{ $asset->name }}">
+                        <span class="asset-preview-btn__icon">&#128247;</span>
                         <span>Foto</span>
                       </button>
                     @else
-                      <span class="text-muted small">Tidak ada foto</span>
+                      <button type="button" class="btn btn-sm asset-preview-btn" disabled title="Foto belum tersedia">
+                        <span class="asset-preview-btn__icon">&#128247;</span>
+                        <span>Foto</span>
+                      </button>
                     @endif
                   </div>
                 </td>
@@ -465,10 +552,22 @@
 </div>
 @if($isAuthenticated)
   <div class="asset-photo-modal" data-photo-modal aria-hidden="true" role="dialog">
-    <div class="asset-photo-panel">
-      <button type="button" class="asset-photo-close" data-photo-close>&times;</button>
-      <div class="asset-photo-label" data-photo-label style="display:none;"></div>
-      <img src="" alt="Foto aset">
+    <div class="asset-photo-panel" role="document">
+      <button type="button" class="asset-photo-close" data-photo-close aria-label="Tutup preview">&times;</button>
+      <div class="asset-photo-label" data-photo-label>Preview Lampiran</div>
+      <div class="asset-preview-viewport" data-preview-viewport tabindex="0">
+        <div class="asset-preview-stage" data-preview-stage>
+          <img src="" alt="Preview foto aset" data-preview-image hidden>
+          <iframe src="about:blank" title="Preview dokumen BAST" data-preview-frame hidden></iframe>
+          <div class="asset-preview-status" data-preview-status hidden></div>
+        </div>
+      </div>
+      <div class="asset-preview-toolbar" aria-label="Kontrol zoom">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-preview-zoom-out aria-label="Perkecil tampilan">&minus;</button>
+        <span class="asset-preview-zoom-value" data-preview-zoom-value>100%</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-preview-zoom-in aria-label="Perbesar tampilan">+</button>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-preview-reset>Pas</button>
+      </div>
     </div>
   </div>
   <x-confirm-modal default-message="Data aset yang dihapus tidak dapat dikembalikan." />
@@ -491,16 +590,101 @@
 
     const closeBtn = modal?.querySelector('[data-photo-close]');
     const labelBox = modal?.querySelector('[data-photo-label]');
-    const showPhotoModal = (src, label = '') => {
+    const viewport = modal?.querySelector('[data-preview-viewport]');
+    const stage = modal?.querySelector('[data-preview-stage]');
+    const image = modal?.querySelector('[data-preview-image]');
+    const frame = modal?.querySelector('[data-preview-frame]');
+    const statusBox = modal?.querySelector('[data-preview-status]');
+    const zoomValue = modal?.querySelector('[data-preview-zoom-value]');
+    const zoomInBtn = modal?.querySelector('[data-preview-zoom-in]');
+    const zoomOutBtn = modal?.querySelector('[data-preview-zoom-out]');
+    const resetBtn = modal?.querySelector('[data-preview-reset]');
+    let activeMedia = null;
+    let zoom = 1;
+    let baseWidth = 0;
+    let baseHeight = 0;
+
+    const applyZoom = () => {
+      if (!activeMedia || !viewport || !stage) return;
+      const width = Math.max(1, baseWidth * zoom);
+      const height = Math.max(1, baseHeight * zoom);
+      activeMedia.style.width = `${width}px`;
+      activeMedia.style.height = `${height}px`;
+      stage.style.width = `${Math.max(viewport.clientWidth, width + 32)}px`;
+      stage.style.height = `${Math.max(viewport.clientHeight, height + 32)}px`;
+      if (zoomValue) zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+      if (zoomOutBtn) zoomOutBtn.disabled = zoom <= 0.25;
+      if (zoomInBtn) zoomInBtn.disabled = zoom >= 4;
+    };
+
+    const setZoom = (nextZoom) => {
+      zoom = Math.min(4, Math.max(0.25, nextZoom));
+      applyZoom();
+    };
+
+    const setStatus = (message = '', isError = false) => {
+      if (!statusBox) return;
+      statusBox.textContent = message;
+      statusBox.hidden = !message;
+      statusBox.classList.toggle('is-error', isError);
+    };
+
+    const setZoomControlsDisabled = (disabled) => {
+      if (zoomInBtn) zoomInBtn.disabled = disabled;
+      if (zoomOutBtn) zoomOutBtn.disabled = disabled;
+      if (resetBtn) resetBtn.disabled = disabled;
+    };
+
+    const prepareMediaSize = () => {
+      if (!activeMedia || !viewport) return;
+      activeMedia.style.width = '';
+      activeMedia.style.height = '';
+      if (activeMedia === frame) {
+        baseWidth = Math.max(320, viewport.clientWidth - 32);
+        baseHeight = Math.max(420, viewport.clientHeight - 32);
+      } else {
+        const naturalWidth = Math.max(1, image.naturalWidth);
+        const naturalHeight = Math.max(1, image.naturalHeight);
+        const availableWidth = Math.max(1, viewport.clientWidth - 32);
+        const availableHeight = Math.max(1, viewport.clientHeight - 32);
+        const fitScale = Math.min(1, availableWidth / naturalWidth, availableHeight / naturalHeight);
+        baseWidth = naturalWidth * fitScale;
+        baseHeight = naturalHeight * fitScale;
+      }
+      zoom = 1;
+      applyZoom();
+      viewport.scrollTo({
+        top: Math.max(0, (baseHeight - viewport.clientHeight) / 2),
+        left: Math.max(0, (baseWidth - viewport.clientWidth) / 2),
+      });
+      setStatus();
+      setZoomControlsDisabled(false);
+    };
+
+    const showPhotoModal = (src, label = '', type = 'image') => {
       if (!modal) return;
-      const img = modal.querySelector('img');
-      img.src = src || '';
+      const isPdf = type === 'pdf';
+      activeMedia = isPdf ? frame : image;
+      image.hidden = isPdf;
+      frame.hidden = !isPdf;
+      setStatus('Memuat preview...');
+      setZoomControlsDisabled(true);
+      if (isPdf) {
+        frame.src = src || 'about:blank';
+      } else {
+        image.alt = label || 'Preview foto aset';
+        image.src = src || '';
+      }
       modal.classList.add('is-visible');
       modal.setAttribute('aria-hidden', 'false');
       document.body.classList.add('asset-photo-modal-open');
       if (labelBox) {
-        labelBox.textContent = label;
-        labelBox.style.display = label ? 'block' : 'none';
+        labelBox.textContent = label || 'Preview Lampiran';
+      }
+      if (isPdf) {
+        requestAnimationFrame(() => requestAnimationFrame(prepareMediaSize));
+      } else if (image.complete && image.naturalWidth > 0) {
+        requestAnimationFrame(prepareMediaSize);
       }
     };
     const hidePhotoModal = () => {
@@ -508,11 +692,20 @@
       modal.classList.remove('is-visible');
       modal.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('asset-photo-modal-open');
-      const img = modal.querySelector('img');
-      img.src = '';
+      image.src = '';
+      frame.src = 'about:blank';
+      image.hidden = true;
+      frame.hidden = true;
+      activeMedia = null;
+      zoom = 1;
+      setStatus();
+      setZoomControlsDisabled(true);
+      if (stage) {
+        stage.style.width = '';
+        stage.style.height = '';
+      }
       if (labelBox) {
-        labelBox.textContent = '';
-        labelBox.style.display = 'none';
+        labelBox.textContent = 'Preview Lampiran';
       }
     };
     closeBtn?.addEventListener('click', hidePhotoModal);
@@ -529,14 +722,43 @@
       }
     });
 
-    document.querySelectorAll('[data-photo-view]').forEach((btn) => {
+    zoomInBtn?.addEventListener('click', () => setZoom(zoom + 0.25));
+    zoomOutBtn?.addEventListener('click', () => setZoom(zoom - 0.25));
+    resetBtn?.addEventListener('click', () => {
+      setZoom(1);
+      viewport?.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    });
+    viewport?.addEventListener('wheel', (event) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      setZoom(zoom + (event.deltaY < 0 ? 0.25 : -0.25));
+    }, { passive: false });
+    image?.addEventListener('load', prepareMediaSize);
+    image?.addEventListener('error', () => {
+      baseWidth = 0;
+      baseHeight = 0;
+      setZoomControlsDisabled(true);
+      setStatus('Foto tidak dapat dimuat. Pastikan file foto masih tersedia.', true);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!modal?.classList.contains('is-visible') || !activeMedia) return;
+      if (event.key === '+' || event.key === '=') setZoom(zoom + 0.25);
+      if (event.key === '-') setZoom(zoom - 0.25);
+      if (event.key === '0') {
+        setZoom(1);
+        viewport?.scrollTo({ top: 0, left: 0 });
+      }
+    });
+
+    document.querySelectorAll('[data-preview-view]').forEach((btn) => {
       btn.addEventListener('click', (event) => {
         event.preventDefault();
-        const src = btn.getAttribute('data-photo-view');
+        const src = btn.getAttribute('data-preview-view');
         if (!src) {
           return;
         }
-        showPhotoModal(src, btn.getAttribute('data-photo-label'));
+        showPhotoModal(src, btn.getAttribute('data-preview-label'), btn.getAttribute('data-preview-type'));
         btn.classList.remove('is-animating');
         void btn.offsetWidth;
         btn.classList.add('is-animating');
