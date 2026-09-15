@@ -12,6 +12,8 @@ use App\Http\Controllers\SsoRoleOverrideController;
 use App\Http\Controllers\PegawaiSearchController;
 use App\Http\Controllers\LandingMediaController;
 use App\Http\Controllers\Auth\SsoController;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 // === SSO Authentication (BPIP) ===
 // Login lokal email/password telah dihapus. Semua autentikasi via SSO.
@@ -21,6 +23,28 @@ Route::get('/sso/callback', [SsoController::class, 'callback'])->name('sso.callb
 // Backward-compat dengan pola sinergi (bila SSO_REDIRECT_URI diarahkan ke path ini)
 Route::get('/authenticateToSSO', [SsoController::class, 'callback']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Akses pengujian lokal saat integrasi SSO tidak dikonfigurasi.
+if (app()->environment('local') && !config('sso.enabled')) {
+    Route::get('/local-login', function () {
+        $user = User::updateOrCreate(
+            ['email' => 'local-admin@localhost.test'],
+            [
+                'nip' => 'LOCAL-ADMIN',
+                'name' => 'Local Admin',
+                'password' => str()->random(40),
+                'role' => User::ROLE_SUPER_ADMIN,
+                'jabatan' => 'Penguji Lokal',
+                'unit_kerja' => 'Pusdatin BPIP',
+            ]
+        );
+
+        Auth::login($user);
+        request()->session()->regenerate();
+
+        return redirect()->route('dashboard');
+    })->name('local.login');
+}
 
 // Rute utama ke landing page
 Route::get('/', [HomeController::class, 'root'])->name('root');

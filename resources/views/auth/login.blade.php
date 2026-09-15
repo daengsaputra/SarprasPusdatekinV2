@@ -31,6 +31,12 @@
                         <span>Masuk dengan SSO BPIP</span>
                     </a>
 
+                    @if (app()->environment('local') && !config('sso.enabled'))
+                        <a href="{{ route('local.login') }}" class="btn btn-outline-secondary w-100 mt-2">
+                            Masuk ke Dashboard Lokal
+                        </a>
+                    @endif
+
                     <p class="text-center text-muted small mt-3 mb-0">
                         Mengalami kendala? Hubungi administrator Pusdatin BPIP.
                     </p>
