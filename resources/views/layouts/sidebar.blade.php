@@ -120,6 +120,13 @@
                         <i class="fa fa-angle-right sarpras-menu-arrow"></i>
                     </a>
                 </li>
+                <li class="{{ request()->routeIs('settings.sso-roles.*') ? 'mm-active' : '' }}">
+                    <a href="{{ route('settings.sso-roles.index') }}" class="ai-icon sarpras-menu-link {{ request()->routeIs('settings.sso-roles.*') ? 'active' : '' }}" data-menu-label="Kelola Role SSO">
+                        <i class="fas fa-user-shield"></i>
+                        <span class="nav-text"><span class="sarpras-menu-label">Kelola Role SSO</span></span>
+                        <i class="fa fa-angle-right sarpras-menu-arrow"></i>
+                    </a>
+                </li>
             @endif
         </ul>
 

@@ -14,80 +14,32 @@
                         </a>
                     </div>
 
-                    <h5 class="text-center mb-4">Silahkan Login</h5>
+                    <h5 class="text-center mb-2">Selamat Datang</h5>
+                    <p class="text-center text-muted small mb-4">
+                        Sistem peminjaman sarpras BPIP. Silakan masuk menggunakan akun SSO BPIP Anda.
+                    </p>
 
                     @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                    @endif
+                    @if (session('error'))
+                        <div class="alert alert-danger">{{ session('error') }}</div>
                     @endif
 
-                    @if (session('status'))
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
-                            {{ session('status') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
+                    <a href="{{ route('sso.redirect') }}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                        <i class="fa fa-shield"></i>
+                        <span>Masuk dengan SSO BPIP</span>
+                    </a>
+
+                    @if (app()->environment('local') && !config('sso.enabled'))
+                        <a href="{{ route('local.login') }}" class="btn btn-outline-secondary w-100 mt-2">
+                            Masuk ke Dashboard Lokal
+                        </a>
                     @endif
 
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <strong>Login Gagal!</strong>
-                            <ul class="mb-0 mt-2">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-
-                        <div class="form-group mb-3">
-                            <label class="form-label"><strong>Email / Username</strong></label>
-                            <input id="login" type="text" class="form-control dz-username @error('login') is-invalid @enderror"
-                                   name="login" value="{{ old('login') }}" required autofocus placeholder="Masukkan username atau email anda">
-                            @error('login')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label class="form-label"><strong>Password</strong></label>
-                            <div class="position-relative">
-                                <input id="password" type="password" autocomplete="current-password"
-                                       class="form-control dz-password @error('password') is-invalid @enderror"
-                                       name="password" required placeholder="Masukkan password anda">
-                                <span class="show-pass position-absolute top-50 end-0 me-2 translate-middle">
-                                    <span class="show"><i class="fa fa-eye-slash"></i></span>
-                                    <span class="hide"><i class="fa fa-eye"></i></span>
-                                </span>
-                                @error('password')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="form-row d-flex justify-content-between mt-4 mb-2 flex-wrap">
-                            <div class="form-group mb-3">
-                                <div class="custom-control custom-checkbox ms-1">
-                                    <input type="checkbox" class="form-check-input" name="remember" id="basic_checkbox_1" {{ old('remember') ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="basic_checkbox_1">Ingat preferensi saya</label>
-                                </div>
-                            </div>
-                            @if (Route::has('password.request'))
-                                <div class="form-group">
-                                    <a href="{{ route('password.request') }}">Lupa Password?</a>
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-primary w-100">Masuk</button>
-                        </div>
-                    </form>
+                    <p class="text-center text-muted small mt-3 mb-0">
+                        Mengalami kendala? Hubungi administrator Pusdatin BPIP.
+                    </p>
                 </div>
             </div>
         </div>

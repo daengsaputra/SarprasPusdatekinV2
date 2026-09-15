@@ -112,7 +112,17 @@ class LoanController extends Controller
             ->orderBy('name')
             ->get();
         $units = config('bpip.units');
-        return view('loans.create', compact('assets','units'));
+
+        // Autofill borrower dari data SSO user yang sedang login.
+        $user = auth()->user();
+        $borrower = [
+            'name'    => $user?->name,
+            'contact' => $user?->email,
+            'unit'    => $user?->unit_kerja,
+            'nip'     => $user?->nip,
+        ];
+
+        return view('loans.create', compact('assets', 'units', 'borrower'));
     }
 
     /**
@@ -124,7 +134,7 @@ class LoanController extends Controller
             'asset_id' => 'required|exists:assets,id',
             'borrower_name' => 'required|string|max:255',
             'borrower_contact' => 'required|string|max:255',
-            'unit' => ['required','string', \Illuminate\Validation\Rule::in(config('bpip.units'))],
+            'unit' => ['required','string','max:255'],
             'activity_name' => 'required|string|max:255',
             'quantity' => 'required|integer|min:1',
             'loan_date' => 'required|date',
@@ -178,7 +188,7 @@ class LoanController extends Controller
         $data = $request->validate([
             'borrower_name' => 'required|string|max:255',
             'borrower_contact' => 'required|string|max:255',
-            'unit' => ['required','string', \Illuminate\Validation\Rule::in(config('bpip.units'))],
+            'unit' => ['required','string','max:255'],
             'activity_name' => 'required|string|max:255',
             'loan_date' => 'required|date',
             'return_date_planned' => 'required|date|after_or_equal:loan_date',

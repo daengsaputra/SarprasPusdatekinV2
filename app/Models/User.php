@@ -28,11 +28,17 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'nip',
+        'username_intra',
         'name',
         'email',
         'password',
         'role',
         'photo',
+        'photo_url',
+        'jabatan',
+        'unit_kerja',
+        'last_sso_login_at',
     ];
 
     /**
@@ -54,6 +60,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_sso_login_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -66,5 +73,20 @@ class User extends Authenticatable
     public function getRoleLabelAttribute(): string
     {
         return self::ROLE_LABELS[$this->role] ?? ucfirst(str_replace('_', ' ', (string) $this->role));
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    public function isPetugas(): bool
+    {
+        return $this->role === self::ROLE_PETUGAS;
+    }
+
+    public function isPeminjam(): bool
+    {
+        return $this->role === self::ROLE_PEMINJAM;
     }
 }

@@ -8,13 +8,43 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SsoRoleOverrideController;
+use App\Http\Controllers\PegawaiSearchController;
 use App\Http\Controllers\LandingMediaController;
+use App\Http\Controllers\Auth\SsoController;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
-// Registrasi rute autentikasi (login, register, logout)
-Auth::routes();
-
-// Override logout route - redirect to home page instead of login
+// === SSO Authentication (BPIP) ===
+// Login lokal email/password telah dihapus. Semua autentikasi via SSO.
+Route::get('/login', [SsoController::class, 'showLogin'])->name('login');
+Route::get('/sso/redirect', [SsoController::class, 'redirectToProvider'])->name('sso.redirect');
+Route::get('/sso/callback', [SsoController::class, 'callback'])->name('sso.callback');
+// Backward-compat dengan pola sinergi (bila SSO_REDIRECT_URI diarahkan ke path ini)
+Route::get('/authenticateToSSO', [SsoController::class, 'callback']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Akses pengujian lokal saat integrasi SSO tidak dikonfigurasi.
+if (app()->environment('local') && !config('sso.enabled')) {
+    Route::get('/local-login', function () {
+        $user = User::updateOrCreate(
+            ['email' => 'local-admin@localhost.test'],
+            [
+                'nip' => 'LOCAL-ADMIN',
+                'name' => 'Local Admin',
+                'password' => str()->random(40),
+                'role' => User::ROLE_SUPER_ADMIN,
+                'jabatan' => 'Penguji Lokal',
+                'unit_kerja' => 'Pusdatin BPIP',
+            ]
+        );
+
+        Auth::login($user);
+        request()->session()->regenerate();
+
+        return redirect()->route('dashboard');
+    })->name('local.login');
+}
 
 // Rute utama ke landing page
 Route::get('/', [HomeController::class, 'root'])->name('root');
@@ -52,6 +82,7 @@ Route::middleware('auth')->group(function () {
     // Routes peminjaman (operasional)
     Route::get('/loans', [LoanController::class, 'index'])->middleware('page.enabled:loans')->name('loans.index');
     Route::get('/loans/create', [LoanController::class, 'create'])->middleware('page.enabled:loans')->name('loans.create');
+    Route::get('/loans/pegawai/search', PegawaiSearchController::class)->middleware('page.enabled:loans')->name('loans.pegawai.search');
     Route::post('/loans/batch', [LoanController::class, 'storeBatch'])->middleware('page.enabled:loans')->name('loans.store.batch');
     Route::delete('/loans/{loan}', [LoanController::class, 'destroy'])->middleware('page.enabled:loans')->name('loans.destroy');
     Route::get('/loans/{loan}/return', [LoanController::class, 'returnForm'])->middleware('page.enabled:loans')->name('loans.return.form');
@@ -87,6 +118,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/admin-menu/logs/export', [SettingController::class, 'exportAdminMenuLogs'])
         ->middleware('role:super_admin')
         ->name('settings.admin-menu.logs.export');
+
+    // SSO role overrides (NIP -> role mapping)
+    Route::middleware('role:super_admin')->prefix('settings/sso-roles')->name('settings.sso-roles.')->group(function () {
+        Route::get('/', [SsoRoleOverrideController::class, 'index'])->name('index');
+        Route::post('/', [SsoRoleOverrideController::class, 'store'])->name('store');
+        Route::put('/{ssoRole}', [SsoRoleOverrideController::class, 'update'])->name('update');
+        Route::delete('/{ssoRole}', [SsoRoleOverrideController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // Jika kamu membutuhkan route dinamis untuk menangani URL lainnya
