@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'SARPRAS PUSDATEKIN' }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -393,6 +396,7 @@
         }
     </style>
     @stack('styles')
+    <link href="{{ asset('css/sso-login-modal.css') }}?v={{ filemtime(public_path('css/sso-login-modal.css')) }}" rel="stylesheet">
 </head>
 <body data-hero-variant="{{ $heroVariant }}">
 <nav class="navbar landing-navbar navbar-expand-lg py-3">
@@ -433,32 +437,10 @@
     &copy; {{ now()->year }} SARPRAS PUSDATEKIN &ndash; Sarana Prasarana BPIP.
 </footer>
 
-<div class="modal fade modal-login" id="loginModalFallback" tabindex="-1" aria-labelledby="loginModalFallbackLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
-        <div class="modal-content">
-            <div class="modal-header border-0 position-relative text-center py-0" style="flex-direction: column;">
-                <button type="button" class="btn-close position-absolute end-0 top-0" data-bs-dismiss="modal" aria-label="Close" style="margin: 1.5rem;"></button>
-                <img src="{{ asset('evanto/assets/images/Logo Baju Pusdatin.png') }}" alt="SARPRAS" class="img-fluid" style="max-height:60px;" onerror="this.style.display='none'">
-                <h5 class="modal-title" id="loginModalFallbackLabel">Masuk Dashboard</h5>
-            </div>
-            <div class="modal-body">
-                @if (session('status'))
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        {{ session('status') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-                <p class="text-muted mb-4">Silakan masuk menggunakan akun SSO BPIP Anda.</p>
-                <a href="{{ route('sso.redirect') }}" class="btn btn-primary w-100 btn-lg mb-2">
-                    <i class="fa fa-shield me-2"></i>Masuk dengan SSO BPIP
-                </a>
-            </div>
+<div class="modal fade modal-login" id="loginModalFallback" tabindex="-1" aria-label="Masuk Dashboard" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content sso-modal-card">
+            @include('auth.partials.sso-modal-content')
         </div>
     </div>
 </div>

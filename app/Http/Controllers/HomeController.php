@@ -51,6 +51,18 @@ class HomeController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $activeTickets = $activeLoans
+            ->map(fn ($loan) => $loan->batch_code ?: 'loan-' . $loan->id)
+            ->unique()
+            ->count();
+        $dueTodayUnits = (int) $activeLoans
+            ->filter(fn ($loan) => optional($loan->return_date_planned)->isToday())
+            ->sum(fn ($loan) => max(0, (int) $loan->quantity - (int) $loan->quantity_returned));
+        $maintenanceUnits = (int) Asset::query()
+            ->where('kind', Asset::KIND_LOANABLE)
+            ->where('status', 'maintenance')
+            ->sum('quantity_total');
+
         $inUseUnits = (int) (clone $activeLoansQuery)
             ->selectRaw('COALESCE(SUM(CASE WHEN quantity > COALESCE(quantity_returned, 0) THEN quantity - COALESCE(quantity_returned, 0) ELSE 0 END), 0) as total')
             ->value('total');
@@ -58,9 +70,18 @@ class HomeController extends Controller
         return view('landing', [
             'landingVideoUrl' => $videoMeta['url'],
             'landingVideoMime' => $videoMeta['mime'],
+            'landingCategories' => $availableAssets
+                ->pluck('category')
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values(),
             'summaryData' => [
                 'available' => $availableUnits,
                 'in_use' => $inUseUnits,
+                'active_tickets' => $activeTickets,
+                'due_today' => $dueTodayUnits,
+                'maintenance' => $maintenanceUnits,
             ],
             'availableAssets' => $availableAssets,
             'activeLoans' => $activeLoans,
